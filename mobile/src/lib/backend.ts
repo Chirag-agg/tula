@@ -1,5 +1,7 @@
 // Optional account: AI reading of notices, backup across devices, and pilot metrics.
-// Without EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_ANON_KEY the app runs fully local.
+// Without EXPO_PUBLIC_SUPABASE_URL / EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY the app runs fully local.
+// The publishable key (sb_publishable_...) is safe to ship in the app; row-level security
+// keeps each student's rows private. Older projects can use the legacy anon key instead.
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, FunctionsHttpError, type Session } from '@supabase/supabase-js';
@@ -8,7 +10,7 @@ import { AppState, Platform } from 'react-native';
 import { isoLocal, weekdayLong, type AiItem, type Deadline } from '@/engine/index.ts';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
-const key = process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
+const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
 
 export const supabase =
   url && key

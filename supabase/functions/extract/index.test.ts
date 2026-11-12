@@ -1,89 +1,21 @@
 // Runs the extract function against a fake Supabase and a fake model; no network, no keys.
-//   cd supabase/functions && deno test --allow-env extract/
+//   cd supabase/functions && deno test --allow-env
 import { assertEquals, assertMatch } from 'jsr:@std/assert@1';
-
-const SUPABASE = 'http://supabase.test';
-Deno.env.set('SUPABASE_URL', SUPABASE);
-Deno.env.set('SUPABASE_SERVICE_ROLE_KEY', 'service-role-test');
-Deno.env.set('GEMINI_API_KEY', 'gemini-test');
-Deno.env.set('EXTRACT_DAILY_CAP', '3');
-
-/** What the fakes saw and will answer. */
-const world = {
-  usageToday: 0,
-  usageInserts: [] as unknown[],
-  modelText: '{"items":[]}',
-  modelStatus: 200,
-  modelBodies: [] as any[],
-  modelHeaders: [] as Headers[],
-  modelUrls: [] as string[],
-};
-
-const jsonRes = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
-  new Response(JSON.stringify(body), { status, headers: { 'Content-Type': 'application/json', ...headers } });
-
-globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => {
-  const req = new Request(input, init);
-  const url = new URL(req.url);
-  if (url.origin === SUPABASE && url.pathname === '/auth/v1/user') {
-    return req.headers.get('Authorization') === 'Bearer good-token'
-      ? jsonRes({ id: 'user-1', aud: 'authenticated', role: 'authenticated', email: 's@example.edu' })
-      : jsonRes({ msg: 'invalid JWT' }, 401);
-  }
-  if (url.origin === SUPABASE && url.pathname === '/rest/v1/extract_usage') {
-    if (req.method === 'HEAD' || req.method === 'GET') {
-      return new Response(null, { status: 200, headers: { 'Content-Range': `*/${world.usageToday}` } });
-    }
-    if (req.method === 'POST') {
-      world.usageInserts.push(await req.json());
-      return new Response(null, { status: 201 });
-    }
-  }
-  if (url.hostname === 'generativelanguage.googleapis.com') {
-    world.modelUrls.push(url.pathname);
-    world.modelBodies.push(await req.json());
-    world.modelHeaders.push(req.headers);
-    return jsonRes(
-      { id: 'int-1', status: 'completed', steps: [{ type: 'model_output', content: [{ type: 'text', text: world.modelText }] }] },
-      world.modelStatus,
-    );
-  }
-  throw new Error(`unexpected fetch ${req.method} ${req.url}`);
-};
-
-let handler!: (req: Request) => Promise<Response>;
-// deno-lint-ignore no-explicit-any
-(Deno as any).serve = (h: typeof handler) => {
-  handler = h;
-  return { finished: Promise.resolve(), shutdown: async () => {} };
-};
-await import('./index.ts');
+import { post, reset, token, USER, world } from '../_shared/test_harness.ts';
+import { handle, outputText } from './index.ts';
 
 const NOW = { now: '2026-11-11T14:05', weekday: 'Wednesday' };
-const call = (body: unknown, token = 'good-token') =>
-  handler(
-    new Request('http://fn.test/extract', {
-      method: 'POST',
-      headers: { Authorization: `Bearer ${token}`, 'Content-Type': 'application/json' },
-      body: typeof body === 'string' ? body : JSON.stringify(body),
-    }),
-  );
-const reset = () => {
-  world.usageToday = 0;
-  world.usageInserts = [];
-  world.modelText = '{"items":[]}';
-  world.modelStatus = 200;
-  world.modelBodies = [];
-  world.modelHeaders = [];
-  world.modelUrls = [];
-};
+const call = (body: unknown, auth?: string | null | Promise<string>) => post(handle, body, auth === undefined ? token() : auth);
 
-Deno.test('rejects a request without a valid sign-in', async () => {
+Deno.test('rejects a missing, forged or expired sign-in before doing anything', async () => {
   reset();
-  const r = await call({ text: 'x', ...NOW }, 'bad-token');
-  assertEquals(r.status, 401);
-  assertEquals((await r.json()).error, 'not_signed_in');
+  for (const auth of [null, 'not-a-jwt', token({ forged: true }), token({ expiresIn: '-1m' })]) {
+    const r = await call({ text: 'x', ...NOW }, auth);
+    assertEquals(r.status, 401);
+    assertEquals((await r.json()).error, 'not_signed_in');
+  }
   assertEquals(world.modelBodies.length, 0);
+  assertEquals(world.usageInserts.length, 0);
 });
 
 Deno.test('reads a text notice through the Interactions API', async () => {
@@ -94,9 +26,12 @@ Deno.test('reads a text notice through the Interactions API', async () => {
   const body = await r.json();
   assertEquals(body.items, [{ title: 'Submit ML lab record', when: 'Friday 5 pm', due: '2026-11-13T17:00' }]);
   assertEquals(body.model, 'gemini-3.5-flash-lite');
-  assertEquals(world.usageInserts, [{ user_id: 'user-1', input: 'text' }]);
+  // the daily cap is counted for this student only, with the new secret key
+  assertEquals(world.usageFilters, [`eq.${USER}`]);
+  assertEquals(world.usageInserts, [{ user_id: USER, input: 'text' }]);
+  assertEquals([...new Set(world.adminKeys)], ['sb_secret_test']);
   assertEquals(world.modelUrls, ['/v1beta/interactions']);
-  // key goes in a header, never the URL
+  // the Gemini key goes in a header, never the URL
   assertEquals(world.modelHeaders[0].get('x-goog-api-key'), 'gemini-test');
   const sent = world.modelBodies[0];
   assertEquals(sent.model, 'gemini-3.5-flash-lite');
@@ -167,8 +102,7 @@ Deno.test('does not count a read when the server has no model key', async () => 
   }
 });
 
-Deno.test('reads text only from model_output steps', async () => {
-  const { outputText } = await import('./index.ts');
+Deno.test('reads text only from model_output steps', () => {
   const res = {
     steps: [
       { type: 'user_input', content: [{ type: 'text', text: 'ignore me' }] },

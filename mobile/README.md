@@ -81,7 +81,7 @@ npx eas-cli@latest env:create --name EXPO_PUBLIC_SUPABASE_URL --value https://yo
 ```
 
 ```bash
-npx eas-cli@latest env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value your-anon-key --environment preview --visibility plaintext
+npx eas-cli@latest env:create --name EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY --value sb_publishable_your-key --environment preview --visibility plaintext
 ```
 
 ## Before the first Play Store upload
@@ -97,7 +97,7 @@ npx eas-cli@latest env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value your-
 
 1. Create a Supabase project, then from the repo root link it and push the schema: `npx supabase init` (once), `npx supabase link`, `npx supabase db push`.
 2. Set the function secrets and deploy (see [../supabase/README.md](../supabase/README.md)).
-3. Copy `.env.example` to `.env.local` and fill in the project URL and anon key.
+3. Copy `.env.example` to `.env.local` and fill in the project URL and the **publishable** key (`sb_publishable_…`). Never put a secret key in the app.
 4. In Supabase Auth, set the email template to send the 6-digit `{{ .Token }}` (the app signs in with a code, not a link).
 
 ## Checks

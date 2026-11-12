@@ -6,6 +6,9 @@ import { askReminderPermission, reminderPermission, type PermissionState } from 
 import { useStore, type SyncState } from '@/lib/store.tsx';
 import { Button, Card, Field, LinkButton, Row, Screen, Section, T, useToast } from '@/ui/kit.tsx';
 
+/** Set in app.json (expo.extra.privacyUrl) once the site is live. */
+const PRIVACY_URL: string = Constants.expoConfig?.extra?.privacyUrl ?? '';
+
 const SYNC: Record<SyncState, string> = {
   local: 'Saved on this phone.',
   'signed-out': 'Saved on this phone. Sign in to back up and to let Tula read screenshots.',
@@ -108,6 +111,9 @@ function DeleteAll() {
       <T variant="muted">
         Tula keeps only the fields you confirm, never the message or screenshot you shared, and it never reads your chats. With AI reading on, a notice is sent once to read the deadline, then discarded.
       </T>
+      {PRIVACY_URL ? (
+        <LinkButton label="Read the privacy policy" onPress={() => Linking.openURL(PRIVACY_URL).catch(() => toast('Couldn’t open the privacy policy.'))} />
+      ) : null}
       <View style={{ gap: 6 }}>
         <T>Delete my data</T>
         <T variant="smallMuted">{session ? 'Removes every deadline from this phone and deletes your account.' : 'Removes every deadline from this phone.'}</T>

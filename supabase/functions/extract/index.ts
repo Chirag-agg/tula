@@ -5,7 +5,7 @@
 // Model call: Gemini Interactions API (Google's recommended API for new projects),
 // with a JSON schema so the model can only answer in the shape we expect,
 // and store: false so Google keeps no copy of the notice.
-import { admin, cors, json, userFrom } from '../_shared/auth.ts';
+import { cors, json, signedIn } from '../_shared/auth.ts';
 
 export const AREAS = ['Assignment', 'Internship / jobs', 'Hackathon', 'Fees / forms', 'Community', 'Personal'];
 const FILE_TYPES = ['image/jpeg', 'image/png', 'image/webp', 'image/heic', 'image/heif', 'application/pdf'];
@@ -76,13 +76,13 @@ export function parseItems(raw: string): unknown[] {
   return list.filter((x) => x && typeof x === 'object').slice(0, 25);
 }
 
-Deno.serve(async (req) => {
+export async function handle(req: Request): Promise<Response> {
   if (req.method === 'OPTIONS') return new Response('ok', { headers: cors });
   if (req.method !== 'POST') return json({ error: 'method_not_allowed' }, 405);
 
-  const db = admin();
-  const user = await userFrom(req, db);
-  if (!user) return json({ error: 'not_signed_in' }, 401);
+  const caller = await signedIn(req);
+  if (!caller) return json({ error: 'not_signed_in' }, 401);
+  const db = caller.admin; // extract_usage has no policies: admin only, always filtered by the caller
 
   let body: { text?: unknown; file?: { mimeType?: unknown; data?: unknown }; now?: unknown; weekday?: unknown };
   try {
@@ -110,12 +110,12 @@ Deno.serve(async (req) => {
   const { count, error: countErr } = await db
     .from('extract_usage')
     .select('id', { count: 'exact', head: true })
-    .eq('user_id', user.id)
+    .eq('user_id', caller.userId)
     .gte('at', since);
   if (countErr) return json({ error: 'server_error' }, 500);
   if ((count ?? 0) >= Number(env('EXTRACT_DAILY_CAP', '100'))) return json({ error: 'rate_limited' }, 429);
   const isPdf = file?.mimeType === 'application/pdf';
-  await db.from('extract_usage').insert({ user_id: user.id, input: file ? (isPdf ? 'pdf' : 'image') : 'text' });
+  await db.from('extract_usage').insert({ user_id: caller.userId, input: file ? (isPdf ? 'pdf' : 'image') : 'text' });
 
   const input: unknown[] = [];
   if (file) input.push({ type: isPdf ? 'document' : 'image', mime_type: file.mimeType, data: file.data });
@@ -146,4 +146,6 @@ Deno.serve(async (req) => {
     return json({ error: 'model_unavailable' }, 502);
   }
   return json({ items: parseItems(outputText(await res.json())), model });
-});
+}
+
+export default { fetch: handle };

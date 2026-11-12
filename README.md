@@ -15,6 +15,8 @@
 | `docs/STRATEGY.md` | Why Tula is student-first, the MVP, validation plan, risks | Decided 25 Oct 2026, amended 11 Nov |
 | `docs/COMPETITORS.md` | About 45 related products and what they mean for Tula | Researched 11 Nov 2026 |
 | `docs/ROADMAP.md` | Timeline, scope contract, watch list | Living doc |
+| `docs/play-store/` | Play Store listing text, data-safety answers, feature graphic, release checklist | Ready to paste into the Play Console |
+| `privacy.html`, `delete-account.html` | Privacy policy and account-deletion page that Google Play requires | Contact details still to fill in |
 
 ## Run it locally
 
