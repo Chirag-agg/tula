@@ -1,0 +1,52 @@
+{
+  "expo": {
+    "name": "Tula",
+    "slug": "tula",
+    "scheme": "tula",
+    "version": "0.1.0",
+    "orientation": "portrait",
+    "icon": "./assets/icon.png",
+    "userInterfaceStyle": "automatic",
+    "backgroundColor": "#F6F3FA",
+    "ios": {
+      "supportsTablet": false,
+      "bundleIdentifier": "app.tula.deadlines"
+    },
+    "android": {
+      "package": "app.tula.deadlines",
+      "adaptiveIcon": {
+        "backgroundColor": "#F6F3FA",
+        "foregroundImage": "./assets/android-icon-foreground.png",
+        "backgroundImage": "./assets/android-icon-background.png",
+        "monochromeImage": "./assets/android-icon-monochrome.png"
+      },
+      "permissions": ["android.permission.POST_NOTIFICATIONS"],
+      "predictiveBackGestureEnabled": false
+    },
+    "web": {
+      "favicon": "./assets/favicon.png",
+      "output": "single"
+    },
+    "plugins": [
+      "expo-router",
+      [
+        "expo-share-intent",
+        {
+          "androidIntentFilters": ["text/*", "image/*", "application/pdf"],
+          "disableIOS": true
+        }
+      ],
+      [
+        "expo-notifications",
+        {
+          "color": "#7462B5"
+        }
+      ],
+      "expo-font",
+      "@react-native-community/datetimepicker"
+    ],
+    "experiments": {
+      "typedRoutes": false
+    }
+  }
+}
