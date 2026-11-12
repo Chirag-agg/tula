@@ -87,6 +87,25 @@ export function applyEdit(t: Deadline, x: Draft, now: number): Deadline {
   };
 }
 
+/**
+ * Combines this phone's deadlines with the account's copy after sign-in.
+ * The newest copy of each deadline wins (a tie keeps this phone's), ids deleted on
+ * this phone stay deleted, and remote rows that aren't valid deadlines are dropped.
+ */
+export function mergeDeadlines(local: Deadline[], remote: unknown[], deleted: string[]): Deadline[] {
+  const gone = new Set(deleted);
+  const byId = new Map<string, Deadline>();
+  const valid = remote.filter(
+    (d): d is Deadline => !!d && typeof d === 'object' && typeof (d as Deadline).id === 'string' && typeof (d as Deadline).title === 'string',
+  );
+  for (const d of [...valid, ...local]) {
+    if (gone.has(d.id)) continue;
+    const cur = byId.get(d.id);
+    if (!cur || (d.updatedAt ?? 0) >= (cur.updatedAt ?? 0)) byId.set(d.id, d);
+  }
+  return [...byId.values()];
+}
+
 export function summarizeSave(r: Pick<SaveResult, 'added' | 'moved' | 'same'>) {
   const bits: string[] = [];
   if (r.added) bits.push(`${r.added} saved`);

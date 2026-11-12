@@ -58,6 +58,14 @@ select count(*) filter (where exists (
 from s;
 ```
 
+## Tests
+
+The extract function runs against a fake Supabase and a fake model, so the tests need no keys or network. They cover sign-in, text and screenshot requests, odd model output, the daily cap, input checks and model failures.
+
+```bash
+cd supabase/functions && npx deno@2 test --allow-env extract/
+```
+
 ## Not verified yet
 
-The functions were written against the documented Supabase and Gemini APIs but haven't been deployed or run: there is no Supabase project or Gemini key yet. Deno isn't installed locally, so they haven't been type-checked either.
+Nothing has been deployed, because there is no Supabase project or Gemini key yet. Real sign-in, row-level security and the actual Gemini response format will only be proven against a live project.

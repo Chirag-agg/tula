@@ -55,6 +55,9 @@ Deno.serve(async (req) => {
   const weekday = typeof body.weekday === 'string' ? body.weekday.slice(0, 12) : '';
   if (!now) return json({ error: 'bad_request' }, 400);
 
+  const key = Deno.env.get('GEMINI_API_KEY');
+  if (!key) return json({ error: 'not_configured' }, 503);
+
   const since = new Date(Date.now() - 864e5).toISOString();
   const { count, error: countErr } = await db
     .from('extract_usage')
@@ -65,8 +68,6 @@ Deno.serve(async (req) => {
   if ((count ?? 0) >= DAILY_CAP) return json({ error: 'rate_limited' }, 429);
   await db.from('extract_usage').insert({ user_id: user.id, input: file ? (file.mimeType === 'application/pdf' ? 'pdf' : 'image') : 'text' });
 
-  const key = Deno.env.get('GEMINI_API_KEY');
-  if (!key) return json({ error: 'not_configured' }, 503);
   const parts: unknown[] = [{ text: prompt(now, weekday, !!file) }];
   if (file) parts.push({ inline_data: { mime_type: file.mimeType, data: file.data } });
   if (text.trim()) parts.push({ text: `Notice:\n${text}` });

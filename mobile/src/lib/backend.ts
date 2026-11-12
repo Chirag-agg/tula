@@ -80,10 +80,11 @@ export async function extractRemote(input: ExtractInput, now: Date): Promise<AiI
 }
 
 /* ---------- sync ---------- */
-export async function pullDeadlines(): Promise<Deadline[]> {
+/** The account's copy, unchecked: mergeDeadlines drops anything that isn't a deadline. */
+export async function pullDeadlines(): Promise<unknown[]> {
   const { data, error } = await need().from('deadlines').select('data');
   if (error) throw new BackendError('sync_failed');
-  return (data ?? []).map((r) => r.data as Deadline).filter((d) => d && typeof d.id === 'string');
+  return (data ?? []).map((r) => r.data);
 }
 
 export async function pushDeadlines(list: Deadline[], deletedIds: string[]) {
@@ -124,16 +125,4 @@ export async function deleteAccount() {
   const { error } = await db.functions.invoke('delete-account', { body: {} });
   if (error) throw new BackendError('delete_failed');
   await db.auth.signOut();
-}
-
-/** Newest copy of each deadline wins; ids deleted on this device stay deleted. */
-export function mergeDeadlines(local: Deadline[], remote: Deadline[], deleted: string[]) {
-  const gone = new Set(deleted);
-  const byId = new Map<string, Deadline>();
-  for (const d of [...remote, ...local]) {
-    if (gone.has(d.id)) continue;
-    const cur = byId.get(d.id);
-    if (!cur || (d.updatedAt ?? 0) >= (cur.updatedAt ?? 0)) byId.set(d.id, d);
-  }
-  return [...byId.values()];
 }
