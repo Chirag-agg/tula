@@ -2,6 +2,7 @@
   "expo": {
     "name": "Tula",
     "slug": "tula",
+    "owner": "chirag-aggs-team",
     "scheme": "tula",
     "version": "0.1.0",
     "orientation": "portrait",
