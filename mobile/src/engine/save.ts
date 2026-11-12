@@ -88,12 +88,26 @@ export function applyEdit(t: Deadline, x: Draft, now: number): Deadline {
 }
 
 /**
+ * What the account keeps for a deleted deadline: the id and when, nothing else.
+ * Every phone that pulls it drops its copy, and the database never lets it be overwritten.
+ */
+export interface Tombstone {
+  id: string;
+  deleted: true;
+  updatedAt: number;
+}
+export const tombstone = (id: string, at: number): Tombstone => ({ id, deleted: true, updatedAt: at });
+const isTombstone = (d: unknown): d is Tombstone =>
+  !!d && typeof d === 'object' && (d as Tombstone).deleted === true && typeof (d as Tombstone).id === 'string';
+
+/**
  * Combines this phone's deadlines with the account's copy after sign-in.
- * The newest copy of each deadline wins (a tie keeps this phone's), ids deleted on
- * this phone stay deleted, and remote rows that aren't valid deadlines are dropped.
+ * The newest copy of each deadline wins (a tie keeps this phone's). Anything deleted
+ * on this phone or on another one (a tombstone) stays deleted, whatever its date, and
+ * remote rows that aren't valid deadlines are dropped.
  */
 export function mergeDeadlines(local: Deadline[], remote: unknown[], deleted: string[]): Deadline[] {
-  const gone = new Set(deleted);
+  const gone = new Set([...deleted, ...remote.filter(isTombstone).map((t) => t.id)]);
   const byId = new Map<string, Deadline>();
   const valid = remote.filter(
     (d): d is Deadline => !!d && typeof d === 'object' && typeof (d as Deadline).id === 'string' && typeof (d as Deadline).title === 'string',

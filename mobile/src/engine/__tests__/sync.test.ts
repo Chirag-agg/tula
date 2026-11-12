@@ -1,6 +1,6 @@
 import { test } from 'node:test';
 import assert from 'node:assert/strict';
-import { fromDraft, mergeDeadlines } from '../save.ts';
+import { fromDraft, mergeDeadlines, tombstone } from '../save.ts';
 import type { Deadline } from '../types.ts';
 
 const mk = (id: string, title: string, updatedAt: number, extra: Partial<Deadline> = {}): Deadline => ({
@@ -41,4 +41,21 @@ test('mergeDeadlines carries done state and history from the newer side', () => 
   const [m] = mergeDeadlines([mk('a', 'x', 10)], [remote], []);
   assert.equal(m.done, true);
   assert.equal(m.history.length, 1);
+});
+
+test('mergeDeadlines: a deadline deleted on another phone disappears here too', () => {
+  const local = [mk('a', 'deleted elsewhere', 10), mk('b', 'kept', 10)];
+  const merged = mergeDeadlines(local, [tombstone('a', 20), mk('b', 'kept', 10)], []);
+  assert.deepEqual(merged.map((d) => d.id), ['b']);
+});
+
+test('mergeDeadlines: a tombstone wins even over a newer local edit', () => {
+  // the phone edited its stale copy after the other phone deleted it; deletion is final
+  const merged = mergeDeadlines([mk('a', 'edited later', 99)], [tombstone('a', 20)], []);
+  assert.deepEqual(merged, []);
+});
+
+test('mergeDeadlines never returns tombstones as deadlines', () => {
+  const merged = mergeDeadlines([], [tombstone('x', 5), tombstone('y', 6)], []);
+  assert.deepEqual(merged, []);
 });

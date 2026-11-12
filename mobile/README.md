@@ -117,7 +117,7 @@ npm run lint
 ## Known limits
 
 - Reminders use Android's normal (inexact) alarms, so one can arrive a few minutes late; aggressive battery savers can delay it more. The You tab tells students how to set battery use to Unrestricted.
-- Backup is meant for one phone per student. A deadline deleted on one phone isn't removed from a second signed-in phone, which would upload it again.
+- A phone signed in to the same account learns about changes made on another phone when Tula next starts, not instantly. Deletions always win: a deadline deleted on one phone can't come back from another.
 - iOS is switched off in the share-intent plugin; the MVP is Android only.
 - `app.tula.deadlines` is a placeholder package name. Change it before the first Play Store upload; it can't change afterwards.
 - The app doesn't link to the privacy policy yet, because its web address depends on where the site is hosted. Add the link to the You tab once it's live.

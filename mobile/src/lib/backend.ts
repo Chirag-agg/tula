@@ -7,7 +7,7 @@ import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, FunctionsHttpError, type Session } from '@supabase/supabase-js';
 import { File } from 'expo-file-system';
 import { AppState, Platform } from 'react-native';
-import { isoLocal, weekdayLong, type AiItem, type Deadline } from '@/engine/index.ts';
+import { isoLocal, tombstone, weekdayLong, type AiItem, type Deadline } from '@/engine/index.ts';
 
 const url = process.env.EXPO_PUBLIC_SUPABASE_URL;
 const key = process.env.EXPO_PUBLIC_SUPABASE_PUBLISHABLE_KEY || process.env.EXPO_PUBLIC_SUPABASE_ANON_KEY;
@@ -98,7 +98,12 @@ export async function pushDeadlines(list: Deadline[], deletedIds: string[]) {
     if (error) throw new BackendError('sync_failed');
   }
   if (deletedIds.length) {
-    const { error } = await db.from('deadlines').delete().in('id', deletedIds);
+    // Replace each deleted deadline with a tombstone (id and time only), so other phones
+    // signed in to the same account drop it too. The content itself is gone from the server.
+    const now = Date.now();
+    const { error } = await db
+      .from('deadlines')
+      .upsert(deletedIds.map((id) => ({ id, data: tombstone(id, now), updated_at: now })), { onConflict: 'user_id,id' });
     if (error) throw new BackendError('sync_failed');
   }
 }

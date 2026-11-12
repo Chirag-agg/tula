@@ -3,6 +3,7 @@
 | Path | What it does |
 | --- | --- |
 | `migrations/20261112000000_init.sql` | `deadlines` (backup copy of each deadline), `capture_events` (counts only, for pilot metrics), `extract_usage` (daily cap). Row-level security on all three; every row is deleted with its account |
+| `migrations/20261112010000_deadline_tombstones.sql` | A deleted deadline becomes a tombstone (id and time only) so every phone on the account drops it; a trigger makes tombstones final |
 | `functions/extract` | Reads a notice (text, screenshot or PDF) with Gemini 3.5 Flash-Lite and returns proposed deadlines. Signed-in users only, 100 reads per day by default. The notice is never stored or logged |
 | `functions/delete-account` | Deletes the signed-in student's account and, by cascade, all their rows |
 | `config.toml` | Project settings: 6-digit email codes that expire in 10 minutes, the sign-in email, and both functions limited to signed-in users |
