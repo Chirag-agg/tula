@@ -46,9 +46,9 @@ Sized around end-semester exams. If exam weeks leave under 10 hours a week each,
 | Capture | Extraction server function (text, screenshot, PDF). Confirm card. Deadline list and radar |
 | Remind | Stakes-based local reminders that fire with the app closed. Today screen. Duplicate and date-change handling with visible history. Delete-my-data |
 
-### 3. Pilot: first two weeks of the new semester, January 2027, for 4 weeks
+### 3. Pilot: 4 weeks, once the backend is live
 
-Start date to be set from the academic calendar. 30 to 50 students, onboarded by section where possible, since new groups and deadlines all arrive at once.
+Discovery was skipped on 12 Nov 2026 to build first, so the pilot can start as soon as the backend is connected. The full plan, pre-launch checklist, messages, surveys and metrics queries are in [pilot/](pilot/README.md). If the start overlaps end-semester exams, move the exit interviews to the week after. 30 to 50 students, onboarded by section where possible, since new groups and deadlines all arrive at once.
 
 - Fix extraction errors daily
 - 2-minute check-in survey each week
