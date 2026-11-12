@@ -21,7 +21,7 @@ The app code was written ahead of the timeline below. The gate still applies: if
 
 ### 1. Discovery and concierge: 16 – 29 Nov 2026
 
-No code. Two people, a spreadsheet and two WhatsApp numbers.
+No code. Two people, a spreadsheet and two WhatsApp numbers. Everything needed is in the [discovery kit](discovery/README.md): day-by-day plan, interview guide, messages, tracking sheets and the gate scorecard.
 
 - 15 interviews, 20 minutes each. Questions are in [STRATEGY.md](STRATEGY.md#validation). Every interview includes: "Show me how you'd save this notice with your phone or Gemini today."
 - **Individual concierge:** 15 to 20 students forward deadlines to a Tula number. Enter them in a sheet, send reminders by hand.
