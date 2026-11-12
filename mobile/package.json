@@ -17,6 +17,7 @@
     "expo-notifications": "~58.1.9",
     "expo-router": "~58.0.31",
     "expo-share-intent": "^9.0.0",
+    "expo-splash-screen": "~58.0.14",
     "expo-status-bar": "~58.0.4",
     "expo-system-ui": "~58.0.7",
     "react": "19.3.0",
@@ -31,16 +32,17 @@
   "devDependencies": {
     "@types/node": "^24.19.2",
     "@types/react": "~19.3.0",
-    "eslint": "^9.0.0",
+    "eslint": "^9.39.5",
     "eslint-config-expo": "~58.0.4",
-    "typescript": "~6.0.3"
+    "typescript": "~6.0.3",
+    "typescript-7": "npm:typescript@^7.0.2"
   },
   "scripts": {
     "start": "expo start",
     "android": "expo run:android",
     "web": "expo start --web",
     "test": "node --test \"src/engine/__tests__/*.test.ts\"",
-    "typecheck": "tsc --noEmit",
+    "typecheck": "node node_modules/typescript-7/bin/tsc --noEmit",
     "lint": "expo lint"
   },
   "private": true

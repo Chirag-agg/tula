@@ -17,6 +17,17 @@ Expo (SDK 58) app: share a notice to Tula, confirm the deadline, get reminders s
 
 Deadlines live on the phone (AsyncStorage). The account is optional.
 
+## Stack (checked 12 Nov 2026)
+
+| Layer | Version | Note |
+| --- | --- | --- |
+| Expo SDK | 58 | Latest. React Native 0.88, React 19.3, Expo Router 58 |
+| AI | Gemini 3.5 Flash-Lite via the Interactions API | Google's current small model and recommended API; see [../supabase/README.md](../supabase/README.md) |
+| Backend | Supabase (Postgres with row-level security, Edge Functions on Deno 2) | supabase-js 2.119 |
+| Typecheck | TypeScript 7 (`npm run typecheck`) | The new native compiler |
+| Lint | ESLint 9 with TypeScript 6 underneath | Expo's lint config doesn't run on ESLint 10 or TypeScript 7 yet. Move up when `eslint-config-expo` supports them |
+| Native module versions | Pinned by Expo SDK 58 | Some packages have newer releases (async-storage 3, React 19.3.1); Expo pins the versions it has tested with React Native 0.88. Don't upgrade them by hand: run `npx expo install --check` |
+
 ## Run it
 
 ```bash
@@ -39,11 +50,48 @@ Share → Tula needs a development build, not Expo Go. With an Android phone con
 npm run android
 ```
 
-Without Android Studio, build in the cloud with EAS and install the APK:
+Without Android Studio, build in the cloud with EAS. Log in to your Expo account first, then link the project (both once):
+
+```bash
+npx eas-cli@latest login
+```
+
+```bash
+npx eas-cli@latest init
+```
 
 ```bash
 npx eas-cli@latest build --profile development --platform android
 ```
+
+Install the APK from the link EAS prints, then run `npm start` and open the app.
+
+## Build profiles (`eas.json`)
+
+| Profile | Gives you | Use it for |
+| --- | --- | --- |
+| `development` | APK with the dev client | Day-to-day work on a real phone |
+| `preview` | Stand-alone APK | Sharing with pilot students without the Play Store |
+| `production` | App bundle, version code bumped automatically | Uploading to Google Play (`eas submit` sends it to the internal testing track) |
+
+Cloud builds don't see `.env.local`. Set the two public values as EAS environment variables instead (once per environment):
+
+```bash
+npx eas-cli@latest env:create --name EXPO_PUBLIC_SUPABASE_URL --value https://your-project.supabase.co --environment preview --visibility plaintext
+```
+
+```bash
+npx eas-cli@latest env:create --name EXPO_PUBLIC_SUPABASE_ANON_KEY --value your-anon-key --environment preview --visibility plaintext
+```
+
+## Before the first Play Store upload
+
+- [ ] Choose the final package name in `app.json` (it can't change after the first upload) and the final app name
+- [ ] Fill in the marked gaps in `../privacy.html` and `../delete-account.html` (contact email, grievance contact, Supabase region) and publish the site
+- [ ] Turn on billing for the Gemini key (the privacy policy depends on the paid tier)
+- [ ] Play Console: data safety form (email address; app activity; content you share is processed but not stored), content rating, target audience 18+
+- [ ] Store listing: `assets/play-store-icon-512.png`, a 1024×500 feature graphic and at least two phone screenshots
+- [ ] Test the `preview` APK on at least two Android phones from different makers, with battery saver on
 
 ## Turn on AI reading and backup
 
@@ -72,3 +120,4 @@ npm run lint
 - Backup is meant for one phone per student. A deadline deleted on one phone isn't removed from a second signed-in phone, which would upload it again.
 - iOS is switched off in the share-intent plugin; the MVP is Android only.
 - `app.tula.deadlines` is a placeholder package name. Change it before the first Play Store upload; it can't change afterwards.
+- The app doesn't link to the privacy policy yet, because its web address depends on where the site is hosted. Add the link to the You tab once it's live.

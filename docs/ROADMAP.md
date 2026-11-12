@@ -86,7 +86,7 @@ New ideas go into a parking-lot doc until the pilot ends.
 | --- | --- | --- |
 | Mobile app | Expo (React Native + TypeScript) | Android first, iOS later. Share-sheet target and scheduled notifications that work when the app is closed |
 | Backend + auth + DB | Supabase (Postgres, Auth, Row Level Security) | Free tier, Google sign-in, per-user data isolation without writing a server |
-| AI calls | Supabase Edge Function calling an LLM API (Gemini Flash-Lite to start) | API keys stay on the server. About ₹0.02 per capture. The model is swappable behind one function |
+| AI calls | Supabase Edge Function calling Gemini 3.5 Flash-Lite through the Interactions API, with a JSON schema and storage off | API keys stay on the server. About ₹0.10 per capture. The model is one setting |
 | Landing page | Static HTML on GitHub Pages | Free, no build step |
 
 Cost to start: ₹0 on free tiers, plus LLM API usage. A Google Play developer account is a one-time fee, needed only when publishing.

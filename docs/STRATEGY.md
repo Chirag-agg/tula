@@ -134,10 +134,12 @@ New deadlines arrive every week, so every forward is a reason to open Tula. Remi
 
 ### AI cost
 
-One capture is roughly 1,500 input tokens (instructions plus a screenshot) and 200 output tokens. On Gemini's small Flash-Lite model, listed at $0.10 per million input and $0.40 per million output tokens (Google pricing), that's about $0.0002, or ₹0.02, per capture:
+One capture is roughly 2,000 input tokens (instructions, the answer format, and a screenshot) and 200 output tokens. On Gemini 3.5 Flash-Lite, Google's current small model, listed at $0.30 per million input and $2.50 per million output tokens (Google pricing, checked 12 Nov 2026), that's about $0.0011, or ₹0.10, per capture. *(amended: the original estimate used the older 2.5 Flash-Lite at a quarter of the price)*
 
-- 50 pilot students × 5 captures a week × 4 weeks = 1,000 captures ≈ $0.25 total, likely inside the free tier
-- 10,000 students × 20 captures a month = 200,000 captures ≈ $45 a month
+- 50 pilot students × 5 captures a week × 4 weeks = 1,000 captures ≈ $1.10 total
+- 10,000 students × 20 captures a month = 200,000 captures ≈ $220 a month
+
+Use the paid tier from the first real student: on the free tier Google may use the content to improve its products, and the privacy policy promises it won't.
 
 Prices change often, so we re-check before launch and keep the model swappable behind one server function.
 
@@ -234,7 +236,7 @@ If we change direction, the most likely moves are to one narrower, high-stakes s
 | Trying to solve too much again | High (it's our habit) | The "Build now / later / avoid" list below is the contract. New ideas go into a parking-lot doc until the pilot ends |
 | Privacy worries (screenshots contain classmates' names and numbers) | Medium | Delete raw images after extraction, store only the fields, one-tap data deletion, clear plain-language privacy note |
 | Demo vs habit. It impresses in a pitch, then nobody opens it in week 3. Judges and mentors have also seen this demo many times | High | We measure week-4 retention, not installs or demo reactions |
-| AI and API costs | Low | About ₹0.02 per capture; the model sits behind one server function and can be swapped |
+| AI and API costs | Low | About ₹0.10 per capture; the model sits behind one server function and can be swapped |
 | Platform dependence (Android share APIs, model pricing) | Low to medium | Use only standard, documented APIs; no scraping |
 | Founder bandwidth alongside college, hackathons and other projects | High | One MVP, one owner per area. If we can't protect about 10 hours a week each, shrink the scope, not the quality |
 

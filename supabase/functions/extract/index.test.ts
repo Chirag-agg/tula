@@ -12,10 +12,11 @@ Deno.env.set('EXTRACT_DAILY_CAP', '3');
 const world = {
   usageToday: 0,
   usageInserts: [] as unknown[],
-  modelText: '[]',
+  modelText: '{"items":[]}',
   modelStatus: 200,
   modelBodies: [] as any[],
   modelHeaders: [] as Headers[],
+  modelUrls: [] as string[],
 };
 
 const jsonRes = (body: unknown, status = 200, headers: Record<string, string> = {}) =>
@@ -39,9 +40,13 @@ globalThis.fetch = async (input: string | URL | Request, init?: RequestInit) => 
     }
   }
   if (url.hostname === 'generativelanguage.googleapis.com') {
+    world.modelUrls.push(url.pathname);
     world.modelBodies.push(await req.json());
     world.modelHeaders.push(req.headers);
-    return jsonRes({ candidates: [{ content: { parts: [{ text: world.modelText }] } }] }, world.modelStatus);
+    return jsonRes(
+      { id: 'int-1', status: 'completed', steps: [{ type: 'model_output', content: [{ type: 'text', text: world.modelText }] }] },
+      world.modelStatus,
+    );
   }
   throw new Error(`unexpected fetch ${req.method} ${req.url}`);
 };
@@ -66,10 +71,11 @@ const call = (body: unknown, token = 'good-token') =>
 const reset = () => {
   world.usageToday = 0;
   world.usageInserts = [];
-  world.modelText = '[]';
+  world.modelText = '{"items":[]}';
   world.modelStatus = 200;
   world.modelBodies = [];
   world.modelHeaders = [];
+  world.modelUrls = [];
 };
 
 Deno.test('rejects a request without a valid sign-in', async () => {
@@ -80,29 +86,36 @@ Deno.test('rejects a request without a valid sign-in', async () => {
   assertEquals(world.modelBodies.length, 0);
 });
 
-Deno.test('reads a text notice and returns the model items', async () => {
+Deno.test('reads a text notice through the Interactions API', async () => {
   reset();
-  world.modelText = JSON.stringify([{ title: 'Submit ML lab record', when: 'Friday 5 pm', due: '2026-11-13T17:00' }]);
+  world.modelText = JSON.stringify({ items: [{ title: 'Submit ML lab record', when: 'Friday 5 pm', due: '2026-11-13T17:00' }] });
   const r = await call({ text: 'ML lab record submission by Friday 5 pm', ...NOW });
   assertEquals(r.status, 200);
   const body = await r.json();
   assertEquals(body.items, [{ title: 'Submit ML lab record', when: 'Friday 5 pm', due: '2026-11-13T17:00' }]);
+  assertEquals(body.model, 'gemini-3.5-flash-lite');
   assertEquals(world.usageInserts, [{ user_id: 'user-1', input: 'text' }]);
-  // key goes in a header, never the URL; the notice and the student's clock reach the prompt
+  assertEquals(world.modelUrls, ['/v1beta/interactions']);
+  // key goes in a header, never the URL
   assertEquals(world.modelHeaders[0].get('x-goog-api-key'), 'gemini-test');
-  const parts = world.modelBodies[0].contents[0].parts;
-  assertMatch(parts[0].text, /Now: Wednesday 2026-11-11 14:05/);
-  assertMatch(parts[parts.length - 1].text, /ML lab record submission by Friday 5 pm/);
-  assertEquals(world.modelBodies[0].generationConfig.responseMimeType, 'application/json');
+  const sent = world.modelBodies[0];
+  assertEquals(sent.model, 'gemini-3.5-flash-lite');
+  assertEquals(sent.store, false); // Google keeps no copy of the notice
+  assertEquals(sent.response_format.type, 'text');
+  assertEquals(sent.response_format.mime_type, 'application/json');
+  assertEquals(sent.response_format.schema.required, ['items']);
+  assertMatch(sent.system_instruction, /Now: Wednesday 2026-11-11 14:05/);
+  assertEquals(sent.input, [{ type: 'text', text: 'Notice:\nML lab record submission by Friday 5 pm' }]);
 });
 
-Deno.test('sends a screenshot as inline data', async () => {
+Deno.test('sends a screenshot as an image and a PDF as a document', async () => {
   reset();
-  const r = await call({ file: { mimeType: 'image/png', data: 'aGVsbG8=' }, ...NOW });
-  assertEquals(r.status, 200);
-  const parts = world.modelBodies[0].contents[0].parts;
-  assertEquals(parts[1], { inline_data: { mime_type: 'image/png', data: 'aGVsbG8=' } });
-  assertEquals(world.usageInserts, [{ user_id: 'user-1', input: 'image' }]);
+  assertEquals((await call({ file: { mimeType: 'image/png', data: 'aGVsbG8=' }, ...NOW })).status, 200);
+  assertEquals(world.modelBodies[0].input[0], { type: 'image', mime_type: 'image/png', data: 'aGVsbG8=' });
+  assertEquals(world.modelBodies[0].input[1].text, 'The notice is the attached file.');
+  assertEquals((await call({ file: { mimeType: 'application/pdf', data: 'JVBERi0=' }, text: 'fee notice', ...NOW })).status, 200);
+  assertEquals(world.modelBodies[1].input[0], { type: 'document', mime_type: 'application/pdf', data: 'JVBERi0=' });
+  assertEquals(world.usageInserts.map((u) => (u as { input: string }).input), ['image', 'pdf']);
 });
 
 Deno.test('accepts model output wrapped in an object or in prose', async () => {
@@ -152,4 +165,18 @@ Deno.test('does not count a read when the server has no model key', async () => 
   } finally {
     Deno.env.set('GEMINI_API_KEY', 'gemini-test');
   }
+});
+
+Deno.test('reads text only from model_output steps', async () => {
+  const { outputText } = await import('./index.ts');
+  const res = {
+    steps: [
+      { type: 'user_input', content: [{ type: 'text', text: 'ignore me' }] },
+      { type: 'thought', content: [{ type: 'text', text: 'also ignore' }] },
+      { type: 'model_output', content: [{ type: 'text', text: '{"items":' }, { type: 'text', text: '[]}' }] },
+    ],
+  };
+  assertEquals(outputText(res), '{"items":[]}');
+  assertEquals(outputText({}), '');
+  assertEquals(outputText(null), '');
 });

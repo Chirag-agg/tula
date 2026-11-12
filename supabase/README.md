@@ -3,7 +3,7 @@
 | Path | What it does |
 | --- | --- |
 | `migrations/20261112000000_init.sql` | `deadlines` (backup copy of each deadline), `capture_events` (counts only, for pilot metrics), `extract_usage` (daily cap). Row-level security on all three; every row is deleted with its account |
-| `functions/extract` | Reads a notice (text, screenshot or PDF) with Gemini and returns proposed deadlines. Signed-in users only, 100 reads per day by default. The notice is never stored or logged |
+| `functions/extract` | Reads a notice (text, screenshot or PDF) with Gemini 3.5 Flash-Lite and returns proposed deadlines. Signed-in users only, 100 reads per day by default. The notice is never stored or logged |
 | `functions/delete-account` | Deletes the signed-in student's account and, by cascade, all their rows |
 
 ## Deploy
@@ -19,7 +19,7 @@ npx supabase db push
 ```
 
 ```bash
-npx supabase secrets set GEMINI_API_KEY=your-key GEMINI_MODEL=gemini-2.5-flash-lite
+npx supabase secrets set GEMINI_API_KEY=your-key
 ```
 
 ```bash
@@ -30,9 +30,26 @@ npx supabase functions deploy extract
 npx supabase functions deploy delete-account
 ```
 
-`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are provided to functions automatically. Optional: `EXTRACT_DAILY_CAP` (default 100).
+`SUPABASE_URL` and `SUPABASE_SERVICE_ROLE_KEY` are provided to functions automatically.
 
-Check the model name against Google's current list before launch; the default may have been renamed. The model sits behind this one function, so changing it is one secret.
+Optional secrets:
+
+| Secret | Default | Use |
+| --- | --- | --- |
+| `GEMINI_MODEL` | `gemini-3.5-flash-lite` | Google's current small model (checked 12 Nov 2026). Switch here when Google moves on |
+| `GEMINI_API_VERSION` | `v1beta` | Google also offers a stable `v1` Interactions endpoint |
+| `EXTRACT_DAILY_CAP` | `100` | Notices one student can have read per day |
+
+**Turn on billing for the Gemini key before real students use it.** On the free tier Google may use the content to improve its products; the privacy policy promises it won't.
+
+### How extract calls Gemini
+
+It uses the **Interactions API** (`POST /v1beta/interactions`), which Google recommends for new projects, with:
+- `store: false`, so Google keeps no copy of the notice
+- a JSON schema in `response_format`, so the model can only answer in the shape the app expects
+- screenshots sent as `image` input and PDFs as `document` input
+
+The app still re-checks every date with its own resolver before showing the confirm card.
 
 ## Pilot metrics
 
