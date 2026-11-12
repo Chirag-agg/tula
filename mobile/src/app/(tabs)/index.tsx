@@ -1,6 +1,7 @@
 import { router } from 'expo-router';
 import { View } from 'react-native';
 import { dueLabel, fmtLong, fmtMin, planDay, radar, reason, summary, TIME_LABELS, type TimeToday } from '@/engine/index.ts';
+import { backendConfigured } from '@/lib/backend.ts';
 import { useStore } from '@/lib/store.tsx';
 import { toneColors, usePalette } from '@/lib/theme.ts';
 import { Brand, useNow } from '@/ui/brand.tsx';
@@ -10,7 +11,7 @@ import { Button, Card, Chip, Empty, LinkButton, Row, Screen, Section, Segmented,
 export default function Today() {
   const p = usePalette();
   const now = useNow();
-  const { loaded, deadlines, time, setTime } = useStore();
+  const { loaded, deadlines, time, setTime, session } = useStore();
   const markDone = useMarkDone();
   const plan = planDay(deadlines, time, now);
   const soon = radar(deadlines, now);
@@ -39,6 +40,13 @@ export default function Today() {
           )}
         </Card>
       </Section>
+
+      {loaded && backendConfigured && !session && (
+        <Card style={{ backgroundColor: p.accentSoft, borderColor: p.accentSoft }}>
+          <T>Sign in to back up your deadlines and let Tula read screenshots and PDFs.</T>
+          <Button kind="primary" small label="Sign in with your email" onPress={() => router.navigate('/settings')} />
+        </Card>
+      )}
 
       <Section title="Today, just these">
         {!loaded ? null : !deadlines.length ? (

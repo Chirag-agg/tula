@@ -5,6 +5,7 @@
 import 'react-native-url-polyfill/auto';
 import AsyncStorage from '@react-native-async-storage/async-storage';
 import { createClient, FunctionsHttpError, type Session } from '@supabase/supabase-js';
+import Constants from 'expo-constants';
 import { File } from 'expo-file-system';
 import { AppState, Platform } from 'react-native';
 import { isoLocal, tombstone, weekdayLong, type AiItem, type Deadline } from '@/engine/index.ts';
@@ -124,6 +125,35 @@ export async function logCapture(ev: CaptureEvent) {
   const { data } = await supabase.auth.getSession();
   if (!data.session) return;
   await supabase.from('capture_events').insert(ev);
+}
+
+/* ---------- error reports ---------- */
+const reported = new Set<string>();
+const MAX_REPORTS_PER_SESSION = 20;
+
+/**
+ * Sends a crash or error report so the team sees problems on students' phones.
+ * Signed-in students only; never throws; each distinct message is sent once per app session.
+ */
+export async function reportError(source: 'screen' | 'global', error: unknown) {
+  try {
+    if (!supabase) return;
+    const err = error instanceof Error ? error : new Error(String(error));
+    const message = `${err.name}: ${err.message}`.slice(0, 500);
+    if (reported.has(message) || reported.size >= MAX_REPORTS_PER_SESSION) return;
+    reported.add(message);
+    const { data } = await supabase.auth.getSession();
+    if (!data.session) return;
+    await supabase.from('client_errors').insert({
+      source,
+      message,
+      stack: err.stack?.slice(0, 2000) ?? null,
+      app_version: (Constants.expoConfig?.version ?? '').slice(0, 40),
+      os_version: `${Platform.OS} ${Platform.Version}`.slice(0, 40),
+    });
+  } catch {
+    // reporting must never cause a second failure
+  }
 }
 
 /** Deletes the account; the database removes its deadlines and events with it. */

@@ -8,9 +8,25 @@ import { StatusBar } from 'expo-status-bar';
 import { useEffect } from 'react';
 import { Platform, Pressable, Text, View } from 'react-native';
 import { SafeAreaProvider } from 'react-native-safe-area-context';
+import { reportError } from '@/lib/backend.ts';
 import { StoreProvider } from '@/lib/store.tsx';
 import { usePalette } from '@/lib/theme.ts';
 import { ToastProvider } from '@/ui/kit.tsx';
+
+/**
+ * Uncaught JavaScript errors outside rendering (timers, event handlers) also get reported,
+ * then passed on to React Native's own handler. A fatal one may close the app before the
+ * report is sent; render errors are caught by ErrorBoundary below instead.
+ */
+type GlobalHandler = (error: Error, isFatal?: boolean) => void;
+const errorUtils = (globalThis as { ErrorUtils?: { getGlobalHandler(): GlobalHandler; setGlobalHandler(h: GlobalHandler): void } }).ErrorUtils;
+if (Platform.OS !== 'web' && errorUtils) {
+  const previous = errorUtils.getGlobalHandler();
+  errorUtils.setGlobalHandler((error, isFatal) => {
+    reportError('global', error);
+    previous(error, isFatal);
+  });
+}
 
 /** Opens the capture screen whenever something is shared to Tula while the app is running. */
 function ShareWatcher() {
@@ -38,6 +54,9 @@ function ReminderTaps() {
  */
 export function ErrorBoundary({ error, retry }: ErrorBoundaryProps) {
   const p = usePalette();
+  useEffect(() => {
+    reportError('screen', error);
+  }, [error]);
   return (
     <View style={{ flex: 1, backgroundColor: p.bg, justifyContent: 'center', padding: 24, gap: 14 }}>
       <Text style={{ color: p.fg, fontSize: 22, fontWeight: '700' }}>Something went wrong</Text>

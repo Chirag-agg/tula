@@ -98,6 +98,8 @@ Play counts data as "collected" when it leaves the phone. Sending notices to Goo
 | Messages → Other in-app messages | Yes | Optional (text of a notice the student shares, when signed in) | Yes: read once, not stored | App functionality |
 | App activity → Other user-generated content | Yes | Optional (deadlines backed up when signed in) | No | App functionality |
 | App activity → Other actions | Yes | Optional (counts per save: found, saved, edited; when signed in) | No | Analytics |
+| App info and performance → Crash logs | Yes | Optional (when signed in) | No | App functionality, Analytics |
+| App info and performance → Diagnostics | Yes | Optional (error messages with app and Android version, when signed in) | No | App functionality |
 
 Everything else (location, contacts, financial info, health, device IDs, web history, audio, calendar) is not collected. Reminders are scheduled on the phone and never leave it.
 
